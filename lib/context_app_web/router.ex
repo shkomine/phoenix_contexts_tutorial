@@ -21,6 +21,12 @@ defmodule ContextAppWeb.Router do
     resources "/sessions", SessionController, only: [:new, :create, :delete], singleton: true
   end
 
+  scope "/cms", ContextAppWeb.CMS, as: :cms do
+    pipe_through [:browser, :authenticate_user]
+
+    resources "/pages", PageController
+  end
+
   # Other scopes may use custom stacks.
   # scope "/api", ContextAppWeb do
   #   pipe_through :api
@@ -34,7 +40,7 @@ defmodule ContextAppWeb.Router do
         |> Phoenix.Controller.redirect(to: "/")
         |> halt()
       user_id ->
-        assign(conn, :current_user, Hello.Accounts.get_user!(user_id))
+        assign(conn, :current_user, ContextApp.Accounts.get_user!(user_id))
     end
   end
 
