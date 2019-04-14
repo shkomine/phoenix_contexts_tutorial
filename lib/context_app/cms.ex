@@ -7,6 +7,8 @@ defmodule ContextApp.CMS do
   alias ContextApp.Repo
 
   alias ContextApp.CMS.Page
+  alias ContextApp.CMS.Author
+  alias ContextApp.Accounts
 
   @doc """
   Returns the list of pages.
@@ -18,7 +20,9 @@ defmodule ContextApp.CMS do
 
   """
   def list_pages do
-    Repo.all(Page)
+    Page
+    |> Repo.all()
+    |> Repo.preload(author: [user: :credential])
   end
 
   @doc """
@@ -35,7 +39,11 @@ defmodule ContextApp.CMS do
       ** (Ecto.NoResultsError)
 
   """
-  def get_page!(id), do: Repo.get!(Page, id)
+  def get_page!(id) do
+    Page
+    |> Repo.get!(id)
+    |> Repo.preload(author: [user: :credential])
+  end
 
   @doc """
   Creates a page.
@@ -49,9 +57,10 @@ defmodule ContextApp.CMS do
       {:error, %Ecto.Changeset{}}
 
   """
-  def create_page(attrs \\ %{}) do
+  def create_page(%Author{} = author, attrs \\ %{}) do
     %Page{}
     |> Page.changeset(attrs)
+    |> Ecto.Changeset.put_change(:author_id, author.id)
     |> Repo.insert()
   end
 
@@ -102,7 +111,15 @@ defmodule ContextApp.CMS do
     Page.changeset(page, %{})
   end
 
-  alias ContextApp.CMS.Author
+
+  def inc_page_views(%Page{} = page) do
+    {1, [%Page{views: views}]} =
+      Repo.update_all(
+        from(p in Page, where: p.id == ^page.id),
+        [inc: [views: 1]], returning: [:views])
+
+    put_in(page.views, views)
+  end
 
   @doc """
   Returns the list of authors.
@@ -131,7 +148,11 @@ defmodule ContextApp.CMS do
       ** (Ecto.NoResultsError)
 
   """
-  def get_author!(id), do: Repo.get!(Author, id)
+  def get_author!(id) do
+    Author
+    |> Repo.get!(id)
+    |> Repo.preload(user: :credential)
+  end
 
   @doc """
   Creates a author.
@@ -196,5 +217,18 @@ defmodule ContextApp.CMS do
   """
   def change_author(%Author{} = author) do
     Author.changeset(author, %{})
+  end
+
+  def ensure_author_exists(%Accounts.User{} = user) do
+    %Author{user_id: user.id}
+    |> Ecto.Changeset.change()
+    |> Ecto.Changeset.unique_constraint(:user_id)
+    |> Repo.insert()
+    |> handle_existing_author()
+  end
+
+  defp handle_existing_author({:ok, author}), do: author
+  defp handle_existing_author({:error, changeset}) do
+    Repo.get_by!(Author, user_id: changeset.data.user_id)
   end
 end

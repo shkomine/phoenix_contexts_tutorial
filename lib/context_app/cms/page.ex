@@ -1,11 +1,13 @@
 defmodule ContextApp.CMS.Page do
   use Ecto.Schema
   import Ecto.Changeset
+  alias ContextApp.CMS.Author
 
   schema "pages" do
     field :body, :string
     field :title, :string
-    field :views, :integer
+    field :views, :integer, default: 0
+    belongs_to :author, Author
 
     timestamps()
   end
