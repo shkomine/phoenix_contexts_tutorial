@@ -1,6 +1,7 @@
 defmodule ContextApp.Accounts.User do
   use Ecto.Schema
   import Ecto.Changeset
+  alias ContextApp.Accounts.Credential
 
   schema "users" do
     field :name, :string

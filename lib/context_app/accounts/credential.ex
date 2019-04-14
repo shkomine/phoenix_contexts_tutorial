@@ -1,11 +1,11 @@
 defmodule ContextApp.Accounts.Credential do
   use Ecto.Schema
   import Ecto.Changeset
+  alias ContextApp.Accounts.User
 
   schema "credentials" do
     field :email, :string
-    field :user_id, :id
-    belonging_to :user, User
+    belongs_to :user, User
 
     timestamps()
   end
